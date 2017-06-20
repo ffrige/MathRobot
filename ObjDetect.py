@@ -1,3 +1,21 @@
+"""
+This module provides two functions: boundingBoxes and predictDigits
+
+- boundingBoxes: reads an input gray image and returns a list of rectangles that
+    represent the bouding boxes to all objects in the image. I am assuming
+    that the image has a white backgroud (e.g. sheet of paper) with black
+    digits written on it. Objects that are too large or too small are removed
+    and objects that overlap others are also eliminated.
+
+- predictDigits: reads the same input gray image and the bounding boxes found
+    by the previous function. Runs a classifier over the regions and outputs
+    a list of digit, with their regions coordinates. Note that not all the input
+    regions make it to the output, because they are screened for containing
+    actual digits.
+
+
+"""
+
 import numpy as np
 import cv2
 import matplotlib.pyplot as plt
@@ -7,9 +25,9 @@ from keras.models import load_model
 model = load_model('CNN.h5')
 
 
-def boundingBoxes(gray):
+def boundingBoxes(grayImg):
     #load image, convert to gray, blur and detect edges
-    gray = cv2.bilateralFilter(gray, 11, 17, 17)
+    gray = cv2.bilateralFilter(grayImg, 11, 17, 17)
     edges = cv2.Canny(gray, 30, 200)
     #find contours in image
     (_, cnts, _) = cv2.findContours(edges,cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_NONE)
@@ -54,7 +72,9 @@ def boundingBoxes(gray):
     rect = np.delete(rect,toRemove,0)
     return(rect)
 
-def predictDigits(rect,gray):
+
+
+def predictDigits(rect,grayImg):
     digits = []
     #convert rectangles into squares of 28*28        
     for i in range(len(rect)):
@@ -62,32 +82,34 @@ def predictDigits(rect,gray):
         h = rect[i][3]
         x = rect[i][0]
         w = rect[i][2]
+
+        #add some padding to increase reading area
         pad_x = min(int(w*0.2),x,gray.shape[1]-x-w)
         pad_y = min(int(h*0.2),y,gray.shape[0]-y-h)
-        #square = gray[y:y+h,x:x+w]
-        square = gray[y-pad_y:y+h+pad_y,x-pad_x:x+w+pad_x]
+        square = grayImg[y-pad_y:y+h+pad_y,x-pad_x:x+w+pad_x]
 
         h = square.shape[0]
         w = square.shape[1]
         delta = int(abs(h-w)/2)
 
-        #add padding to make it square
+        #add more padding to make it square
         pad = int(min(h,w)*0.1)
         if w>h:
             square = cv2.copyMakeBorder(square,delta+pad,delta+pad,pad,pad,cv2.BORDER_CONSTANT,value=255)
         else:
             square = cv2.copyMakeBorder(square,pad,pad,delta+pad,delta+pad,cv2.BORDER_CONSTANT,value=255)
+
+        #resize to 28*28 pixel size
         square = cv2.resize(square,(28,28))
         
         #run classifier over each square
-        #imgarr = square.reshape(1,784) #for FF net
         imgarr = square.reshape(1,28,28,1) #for Conv net
         imgarr = imgarr.astype('float32')
         imgarr /= 255
         imgarr = (1 - imgarr)
         prediction = model.predict(imgarr,verbose=0)
         if np.amax(prediction) > 0.5:
-            digits.append([np.argmax(prediction),x,y])
+            digits.append([np.argmax(prediction),x,y,w,h])
         #plt.imshow(imgarr.reshape(28,28), cmap='Greys', interpolation='nearest')
         #plt.show()
     return digits

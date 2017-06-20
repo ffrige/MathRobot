@@ -1,37 +1,57 @@
+"""
+The SpeakOut function receives a list of objects detected by the camera,
+each one with a single digit/character and its position in space.
+
+The mathematical operation is first decoded, then evaluated and finally
+spoken out loud.
+"""
+
 import winsound
 import sys
 
-"""
-10 is +
-11 is -
-12 is *
-13 is /
+def decode(objects):
 
-"""
+    digits = [str(element[0]) for element in objects]
+        
+    #look for operation
+    # '10' is +    '11' is -    '12' is *    '13' is /
+    op = [i for i in digits if int(i)>9]
+    if len(op) != 1:
+        print("No correct mathematical operation found!")
+        return None,None,None,None
+    else:
+        op_idx = digits.index(op[0])
 
-def speak(result):
-
-    digits = [element[0] for element in result]
-    operation = [i for i in digits if i>9]
-    if len(operation) != 1:
-        print("wrong number of operations found")
-        return 0
-
-    return 0 
-
-    #TODO -finish the rest...
+    number1 = ''.join(digits[:op_idx])
+    number2 = ''.join(digits[op_idx+1:])
 
     #calculate result of operation
-    if operation==10:
-        members.append(str(int(members[0])+int(members[2])))
-    elif operation==11:
-        members.append(str(int(members[0])-int(members[2])))
-    elif operation==12:
-        members.append(str(int(members[0])*int(members[2])))
-    elif operation==13:
-        members.append(str(int(members[0])/int(members[2])))
+    if op[0]=='10':
+        result = int(number1) + int(number2)
+        op[0]='+'
+    elif op[0]=='11':
+        result = int(number1) - int(number2)
+        op[0]='-'
+    elif op[0]=='12':
+        result = int(number1) * int(number2)
+        op[0]='x'
+    elif op[0]=='13':
+        result = int(number1) // int(number2)
+        op[0]='%'
+
+    return number1, op[0], number2, '=', str(result)
 
 
+def speak(objects):
+
+    #decode digits into numbers, operation, and result
+    members = decode(objects)
+
+    if None in members:
+        print("No correct mathematical operation found!")
+        return None
+
+    #speak out loud each member
     for member in members:
 
         if member.isdigit():
@@ -47,3 +67,8 @@ def speak(result):
                 digits -=1
         else:
             winsound.PlaySound('voice/'+member+'.wav', winsound.SND_FILENAME)
+
+
+if __name__ == "__main__":
+    objects = [[6,0,0],[4,0,0],[12,0,0],[3,0,0]] #64*3
+    speak(objects)  #64*3=192

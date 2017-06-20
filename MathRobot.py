@@ -1,3 +1,9 @@
+"""
+This program reads the input frames from a webcam, looks for a mathematical
+expression, evaluates it and speaks out the result.
+"""
+
+
 import ObjDetect as OD
 import SpeakOut as SO
 import cv2
@@ -22,8 +28,8 @@ while(True):
 
     #print predicted digits and bounding boxes
     for i in range(len(digits)):
-        cv2.rectangle(img,(rect[i][0],rect[i][1]),(rect[i][0]+rect[i][2],rect[i][1]+rect[i][3]),(0,255,255),3)
         cv2.putText(img,str(digits[i][0]),(digits[i][1],digits[i][2]), 0, 2,color=(0,255,255),thickness=3)
+        cv2.rectangle(img,(digits[i][1],digits[i][2]),(digits[i][1]+digits[i][3],digits[i][2]+digits[i][4]),(0,255,255),3)
 
     #show original image
     cv2.imshow("Webcam View", img)
