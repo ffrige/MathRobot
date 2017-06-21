@@ -84,8 +84,8 @@ def predictDigits(rect,grayImg):
         w = rect[i][2]
 
         #add some padding to increase reading area
-        pad_x = min(int(w*0.2),x,gray.shape[1]-x-w)
-        pad_y = min(int(h*0.2),y,gray.shape[0]-y-h)
+        pad_x = min(int(w*0.2),x,grayImg.shape[1]-x-w)
+        pad_y = min(int(h*0.2),y,grayImg.shape[0]-y-h)
         square = grayImg[y-pad_y:y+h+pad_y,x-pad_x:x+w+pad_x]
 
         h = square.shape[0]
