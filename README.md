@@ -4,8 +4,8 @@ The robot uses a webcam to recognize an algebraic expression and speaks out loud
 It is meant to work by showing a piece of paper with some digits written on it, (e.g.
 15-8) to simplify the objects recognition.
 
-![examples of digits detection](/tests/result4.png)
-![examples of digits detection](/tests/result6.png)
+![examples of digits detection](/result4.png)
+![examples of digits detection](/result6.png)
 
 The first step uses OpenCV to read the webcam streamed frames and find objects in them. I use the findContours and boundingRect functions to find all objects, then remove those that are too small or too big (I am assuming all digits to be of similar size).
 
