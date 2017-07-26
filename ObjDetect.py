@@ -25,9 +25,9 @@ from keras.models import load_model
 model = load_model('CNN.h5')
 
 
-def boundingBoxes(grayImg):
+def boundingBoxes(grayImg,filterA_value,filterB_value):
     #load image, convert to gray, blur and detect edges
-    gray = cv2.bilateralFilter(grayImg, 11, 17, 17)
+    gray = cv2.bilateralFilter(grayImg, 9, 100, 100)
     edges = cv2.Canny(gray, 30, 200)
     #find contours in image
     (_, cnts, _) = cv2.findContours(edges,cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_NONE)
@@ -40,22 +40,14 @@ def boundingBoxes(grayImg):
     #find all bounding boxes
     for i in range(len(cnts)):
         testRect = cv2.boundingRect(cnts[i])
-        #only consider objects that are sized at least 10% of full image
-        if testRect[2] < 64 or testRect[3] < 48:
+        #ignore objects that are too small or too big
+        if (testRect[2] * testRect[3]) < 10 or (testRect[2] * testRect[3]) > 10000:
             continue
         rect.append(testRect)
         rectIdx = len(rect)-1
         avg_width = (avg_width*rectIdx + rect[rectIdx][2])/(rectIdx+1)
         avg_height = (avg_height*rectIdx + rect[rectIdx][3])/(rectIdx+1)
     #print("Found {0} objects with avg_width {1} and avg_height {2}".format(len(cnts),avg_width,avg_height))
-
-    #remove objects that are too small or too big
-    toRemove = []
-    trsh = 0.2
-    for i in range(len(rect)):
-        if rect[i][2]<avg_width*trsh or rect[i][2]>avg_width/trsh or rect[i][3]<avg_height*trsh or rect[i][3]>avg_height/trsh:
-            toRemove.append(i)
-    rect = np.delete(rect,toRemove,0)
 
     #remove overlapping rectangles, keep larger ones only
     toRemove = []
@@ -71,7 +63,6 @@ def boundingBoxes(grayImg):
                     toRemove.append(j)                
     rect = np.delete(rect,toRemove,0)
     return(rect)
-
 
 
 def predictDigits(rect,grayImg):
@@ -99,6 +90,10 @@ def predictDigits(rect,grayImg):
         else:
             square = cv2.copyMakeBorder(square,pad,pad,delta+pad,delta+pad,cv2.BORDER_CONSTANT,value=255)
 
+        #add blurring here before resizing
+        #otherwise details will be lost when resizing
+        square = cv2.GaussianBlur(square,(5,5),5)
+
         #resize to 28*28 pixel size
         square = cv2.resize(square,(28,28))
         
@@ -108,8 +103,23 @@ def predictDigits(rect,grayImg):
         imgarr /= 255
         imgarr = (1 - imgarr)
         prediction = model.predict(imgarr,verbose=0)
-        if np.amax(prediction) > 0.5:
+        #print(prediction)
+        if np.amax(prediction) > 0.3:
             digits.append([np.argmax(prediction),x,y,w,h])
         #plt.imshow(imgarr.reshape(28,28), cmap='Greys', interpolation='nearest')
         #plt.show()
     return digits
+
+
+def DigitToString(in_digit):
+        if in_digit<10:
+            return str(in_digit)
+        if in_digit == 10:
+            return '+'
+        if in_digit == 11:
+            return '-'
+        if in_digit == 12:
+            return 'x'
+        if in_digit == 13:
+            return '/'
+
